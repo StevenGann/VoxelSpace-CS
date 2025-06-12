@@ -29,6 +29,10 @@ class Program
     private const float MAX_HORIZON = 600.0f;
     private const float MAX_HEIGHT_DIFF = 20.0f;
 
+    // Screen dimensions
+    private static int screenWidth = 1024;
+    private static int screenHeight = 768;
+
     private static (byte[] heightMap, Color[] colorMap, int heightMapWidth, int heightMapHeight, int colorMapWidth, int colorMapHeight) LoadMaps(string colorMapName, string heightMapName)
     {
         // Try different possible paths for the maps directory
@@ -133,8 +137,26 @@ class Program
 
     private static void Main(string[] args)
     {
+        // Parse command line arguments for window size
+        screenWidth = 1024;
+        screenHeight = 768;
+
+        if (args.Length >= 2)
+        {
+            if (int.TryParse(args[0], out int width) && int.TryParse(args[1], out int height))
+            {
+                screenWidth = width;
+                screenHeight = height;
+            }
+            else
+            {
+                Console.WriteLine("Invalid window size parameters. Using default size (1024x768).");
+                Console.WriteLine("Usage: VoxelSpace [width] [height]");
+            }
+        }
+
         // Initialize window
-        Raylib.InitWindow(800, 600, "VoxelSpace");
+        Raylib.InitWindow(screenWidth, screenHeight, "VoxelSpace");
         Raylib.SetTargetFPS(60);
 
         // Create engine and load initial map
@@ -148,7 +170,7 @@ class Program
         float playerY = heightMapHeight / 2;
         float playerHeight = 100;
         float playerAngle = 0;
-        float horizon = 300;
+        float horizon = screenHeight / 2;  // Center horizon on screen
 
         // Main game loop
         while (!Raylib.WindowShouldClose())
@@ -244,7 +266,7 @@ class Program
             // Render frame
             Raylib.BeginDrawing();
             Raylib.ClearBackground(new Color(0, 0, 0, 255));
-            engine.Render(playerX, playerY, playerHeight, playerAngle);
+            engine.Render(playerX, playerY, playerHeight, playerAngle, screenWidth, screenHeight);
             Raylib.EndDrawing();
         }
 

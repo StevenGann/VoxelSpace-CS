@@ -10,8 +10,6 @@ namespace VoxelSpace;
 /// </summary>
 public class VoxelSpaceEngine
 {
-    private const int SCREEN_WIDTH = 800;
-    private const int SCREEN_HEIGHT = 600;
     private const float HEIGHT_SCALE = 0.1f;
     private const float DISTANCE_SCALE = 0.1f;
     private const int MAX_DISTANCE = 1000;
@@ -60,8 +58,8 @@ public class VoxelSpaceEngine
             }
         }
 
-        // Initialize view parameters
-        horizon = SCREEN_HEIGHT / 2;
+        // Initialize view parameters with default horizon
+        horizon = 300;
     }
 
     /// <summary>
@@ -124,23 +122,23 @@ public class VoxelSpaceEngine
     /// 3. Uses adaptive step size for level of detail
     /// 4. Implements the painter's algorithm for proper occlusion
     /// </remarks>
-    public void Render(float playerX, float playerY, float playerHeight, float playerAngle)
+    public void Render(float playerX, float playerY, float playerHeight, float playerAngle, int screenWidth, int screenHeight)
     {
         // Draw sky
-        Raylib.DrawRectangle(0, 0, SCREEN_WIDTH, (int)horizon, new Color(135, 206, 235, 255));
+        Raylib.DrawRectangle(0, 0, screenWidth, (int)horizon, new Color(135, 206, 235, 255));
 
         // Draw ground
-        Raylib.DrawRectangle(0, (int)horizon, SCREEN_WIDTH, SCREEN_HEIGHT - (int)horizon, new Color(34, 139, 34, 255));
+        Raylib.DrawRectangle(0, (int)horizon, screenWidth, screenHeight - (int)horizon, new Color(34, 139, 34, 255));
 
         // Calculate view frustum
         float sinAng = (float)Math.Sin(playerAngle);
         float cosAng = (float)Math.Cos(playerAngle);
 
         // Track the highest point drawn for each column (for occlusion)
-        int[] hiddenY = new int[SCREEN_WIDTH];
-        for (int i = 0; i < SCREEN_WIDTH; i++)
+        int[] hiddenY = new int[screenWidth];
+        for (int i = 0; i < screenWidth; i++)
         {
-            hiddenY[i] = SCREEN_HEIGHT;
+            hiddenY[i] = screenHeight;
         }
 
         // Draw from front to back
@@ -154,8 +152,8 @@ public class VoxelSpaceEngine
             float pry = -sinAng * z - cosAng * z;
 
             // Calculate the step size for interpolating between left and right points
-            float dx = (prx - plx) / SCREEN_WIDTH;
-            float dy = (pry - ply) / SCREEN_WIDTH;
+            float dx = (prx - plx) / screenWidth;
+            float dy = (pry - ply) / screenWidth;
 
             // Add camera position
             plx += playerX;
@@ -165,7 +163,7 @@ public class VoxelSpaceEngine
             float invZ = 1.0f / z * 240.0f;
 
             // Draw each vertical line
-            for (int i = 0; i < SCREEN_WIDTH; i++)
+            for (int i = 0; i < screenWidth; i++)
             {
                 // Get height at current position
                 int mapHeight = GetHeightAt((int)plx, (int)ply);
