@@ -23,8 +23,8 @@ class Program
     // Movement constants
     private const float MOVE_SPEED = 100.0f;
     private const float ROTATE_SPEED = 5.0f;
-    private const float HEIGHT_ADJUST_SPEED = 10.0f;
-    private const float HORIZON_ADJUST_SPEED = 2.0f;
+    private const float HEIGHT_ADJUST_SPEED = 100.0f;
+    private const float HORIZON_ADJUST_SPEED = 20.0f;
     private const float MAX_HEIGHT = 255.0f;
     private const float MAX_HORIZON = 600.0f;
     private const float MAX_HEIGHT_DIFF = 20.0f;
@@ -198,13 +198,37 @@ class Program
             // Update position with collision detection
             float newX = playerX + moveX;
             float newY = playerY + moveY;
+
+            // Get height at current and new position
             int currentHeight = engine.GetHeightAt((int)playerX, (int)playerY);
             int newHeight = engine.GetHeightAt((int)newX, (int)newY);
 
-            if (Math.Abs(newHeight - currentHeight) < MAX_HEIGHT_DIFF)
+            // Check if the height difference is too steep or if we would go below the terrain
+            if (Math.Abs(newHeight - currentHeight) < MAX_HEIGHT_DIFF && newHeight <= playerHeight + 10)
             {
                 playerX = newX;
                 playerY = newY;
+            }
+            else
+            {
+                // If we can't move in the current direction, try moving only in X or Y
+                float testX = playerX + moveX;
+                float testY = playerY;
+                int testHeightX = engine.GetHeightAt((int)testX, (int)testY);
+                
+                if (Math.Abs(testHeightX - currentHeight) < MAX_HEIGHT_DIFF && testHeightX <= playerHeight + 10)
+                {
+                    playerX = testX;
+                }
+
+                testX = playerX;
+                testY = playerY + moveY;
+                int testHeightY = engine.GetHeightAt((int)testX, (int)testY);
+                
+                if (Math.Abs(testHeightY - currentHeight) < MAX_HEIGHT_DIFF && testHeightY <= playerHeight + 10)
+                {
+                    playerY = testY;
+                }
             }
 
             // Handle height and horizon adjustment
