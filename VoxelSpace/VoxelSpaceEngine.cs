@@ -23,8 +23,6 @@ public class VoxelSpaceEngine
     private int colorMapWidth;
     private int colorMapHeight;
     private float horizon;
-    private float scaleHeight;
-    private float scaleDistance;
 
     /// <summary>
     /// Initializes a new instance of the VoxelSpaceEngine class.
@@ -64,8 +62,6 @@ public class VoxelSpaceEngine
 
         // Initialize view parameters
         horizon = SCREEN_HEIGHT / 2;
-        scaleHeight = SCREEN_HEIGHT * HEIGHT_SCALE;
-        scaleDistance = SCREEN_WIDTH * DISTANCE_SCALE;
     }
 
     /// <summary>

@@ -16,21 +16,23 @@ class Program
         ("C5W", "D5"),   // Map 5
         ("C6W", "D6"),   // Map 6
         ("C7W", "D7"),   // Map 7
-        ("C10W", "D10"),    // Map 8
+        ("C10W", "D10"), // Map 8
         ("C9W", "D9"),   // Map 9
     };
+
+    // Movement constants
+    private const float MOVE_SPEED = 100.0f;
+    private const float ROTATE_SPEED = 5.0f;
+    private const float HEIGHT_ADJUST_SPEED = 10.0f;
+    private const float HORIZON_ADJUST_SPEED = 2.0f;
+    private const float MAX_HEIGHT = 255.0f;
+    private const float MAX_HORIZON = 600.0f;
+    private const float MAX_HEIGHT_DIFF = 20.0f;
 
     private static (byte[] heightMap, Color[] colorMap, int heightMapWidth, int heightMapHeight, int colorMapWidth, int colorMapHeight) LoadMaps(string colorMapName, string heightMapName)
     {
         // Try different possible paths for the maps directory
-        string[] possiblePaths = new[]
-        {
-            "maps",
-            "../maps",
-            "../../maps",
-            "VoxelSpace/bin/Debug/net9.0/maps"
-        };
-
+        string[] possiblePaths = { "maps", "../maps", "../../maps", "VoxelSpace/bin/Debug/net9.0/maps" };
         string colorMapPath = string.Empty;
         string heightMapPath = string.Empty;
 
@@ -48,24 +50,20 @@ class Program
             }
         }
 
-        if (colorMapPath == null || heightMapPath == null)
+        if (string.IsNullOrEmpty(colorMapPath) || string.IsNullOrEmpty(heightMapPath))
         {
             throw new FileNotFoundException("Could not find map files in any of the expected locations");
         }
 
-        // Load the height map
+        // Load the maps
         Image heightMapImage = Raylib.LoadImage(heightMapPath);
-        if (heightMapImage.Width == 0 || heightMapImage.Height == 0)
-        {
-            throw new Exception($"Failed to load height map: {heightMapName}");
-        }
-
-        // Load the color map
         Image colorMapImage = Raylib.LoadImage(colorMapPath);
-        if (colorMapImage.Width == 0 || colorMapImage.Height == 0)
+
+        if (heightMapImage.Width == 0 || heightMapImage.Height == 0 || colorMapImage.Width == 0 || colorMapImage.Height == 0)
         {
             Raylib.UnloadImage(heightMapImage);
-            throw new Exception($"Failed to load color map: {colorMapName}");
+            Raylib.UnloadImage(colorMapImage);
+            throw new Exception("Failed to load map images");
         }
 
         try
@@ -82,9 +80,10 @@ class Program
                 }
                 Raylib.UnloadImageColors(ptr);
             }
+
+            // Convert RGB to grayscale using standard luminance formula
             for (int i = 0; i < heightMapColors.Length; i++)
             {
-                // Convert RGB to grayscale using standard luminance formula
                 heightMap[i] = (byte)((heightMapColors[i].R * 0.299f + heightMapColors[i].G * 0.587f + heightMapColors[i].B * 0.114f));
             }
 
@@ -138,10 +137,8 @@ class Program
         Raylib.InitWindow(800, 600, "VoxelSpace");
         Raylib.SetTargetFPS(60);
 
-        // Create engine
+        // Create engine and load initial map
         var engine = new VoxelSpaceEngine();
-
-        // Load maps
         var (heightMap, colorMap, heightMapWidth, heightMapHeight, colorMapWidth, colorMapHeight) = LoadMaps(Maps[0].colorMap, Maps[0].heightMap);
         engine.SetHeightMap(heightMap, heightMapWidth, heightMapHeight);
         engine.SetColorMap(colorMap, colorMapWidth, colorMapHeight);
@@ -153,24 +150,14 @@ class Program
         float playerAngle = 0;
         float horizon = 300;
 
-        // Movement constants
-        const float MOVE_SPEED = 100.0f;
-        const float ROTATE_SPEED = 2.0f;
-
         // Main game loop
         while (!Raylib.WindowShouldClose())
         {
             float deltaTime = Raylib.GetFrameTime();
 
             // Handle rotation
-            if (Raylib.IsKeyDown(KeyboardKey.Left))
-            {
-                playerAngle += ROTATE_SPEED * deltaTime;
-            }
-            if (Raylib.IsKeyDown(KeyboardKey.Right))
-            {
-                playerAngle -= ROTATE_SPEED * deltaTime;
-            }
+            if (Raylib.IsKeyDown(KeyboardKey.Left)) playerAngle += ROTATE_SPEED * deltaTime;
+            if (Raylib.IsKeyDown(KeyboardKey.Right)) playerAngle -= ROTATE_SPEED * deltaTime;
 
             // Handle movement
             float moveX = 0;
@@ -211,48 +198,29 @@ class Program
             // Update position with collision detection
             float newX = playerX + moveX;
             float newY = playerY + moveY;
-
-            // Get height at current and new position
             int currentHeight = engine.GetHeightAt((int)playerX, (int)playerY);
             int newHeight = engine.GetHeightAt((int)newX, (int)newY);
 
-            // Only move if height difference is not too steep
-            if (Math.Abs(newHeight - currentHeight) < 20)
+            if (Math.Abs(newHeight - currentHeight) < MAX_HEIGHT_DIFF)
             {
                 playerX = newX;
                 playerY = newY;
             }
 
-            // Handle height adjustment
-            if (Raylib.IsKeyDown(KeyboardKey.Q))
-            {
-                playerHeight -= MOVE_SPEED * 2 * deltaTime;
-            }
-            if (Raylib.IsKeyDown(KeyboardKey.E))
-            {
-                playerHeight += MOVE_SPEED * 2 * deltaTime;
-            }
-
-            // Handle horizon adjustment
-            if (Raylib.IsKeyDown(KeyboardKey.R))
-            {
-                horizon += 2 * deltaTime;
-            }
-            if (Raylib.IsKeyDown(KeyboardKey.F))
-            {
-                horizon -= 2 * deltaTime;
-            }
+            // Handle height and horizon adjustment
+            if (Raylib.IsKeyDown(KeyboardKey.Q)) playerHeight -= HEIGHT_ADJUST_SPEED * deltaTime;
+            if (Raylib.IsKeyDown(KeyboardKey.E)) playerHeight += HEIGHT_ADJUST_SPEED * deltaTime;
+            if (Raylib.IsKeyDown(KeyboardKey.R)) horizon += HORIZON_ADJUST_SPEED * deltaTime;
+            if (Raylib.IsKeyDown(KeyboardKey.F)) horizon -= HORIZON_ADJUST_SPEED * deltaTime;
 
             // Clamp values
-            playerHeight = Math.Max(0, Math.Min(255, playerHeight));
-            horizon = Math.Max(0, Math.Min(600, horizon));
+            playerHeight = Math.Max(0, Math.Min(MAX_HEIGHT, playerHeight));
+            horizon = Math.Max(0, Math.Min(MAX_HORIZON, horizon));
 
             // Render frame
             Raylib.BeginDrawing();
             Raylib.ClearBackground(new Color(0, 0, 0, 255));
-
             engine.Render(playerX, playerY, playerHeight, playerAngle);
-
             Raylib.EndDrawing();
         }
 
