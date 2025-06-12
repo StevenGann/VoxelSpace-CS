@@ -158,6 +158,7 @@ class Program
         // Initialize window
         Raylib.InitWindow(screenWidth, screenHeight, "VoxelSpace");
         Raylib.SetTargetFPS(60);
+        Raylib.SetWindowState(ConfigFlags.ResizableWindow);
 
         // Create engine and load initial map
         var engine = new VoxelSpaceEngine();
@@ -170,11 +171,18 @@ class Program
         float playerY = heightMapHeight / 2;
         float playerHeight = 100;
         float playerAngle = 0;
-        float horizon = screenHeight / 2;  // Center horizon on screen
 
         // Main game loop
         while (!Raylib.WindowShouldClose())
         {
+            // Update screen dimensions if window was resized
+            if (Raylib.IsWindowResized())
+            {
+                screenWidth = Raylib.GetScreenWidth();
+                screenHeight = Raylib.GetScreenHeight();
+                horizon = screenHeight / 2;  // Recenter horizon
+            }
+
             float deltaTime = Raylib.GetFrameTime();
 
             // Handle rotation
@@ -256,12 +264,10 @@ class Program
             // Handle height and horizon adjustment
             if (Raylib.IsKeyDown(KeyboardKey.Q)) playerHeight -= HEIGHT_ADJUST_SPEED * deltaTime;
             if (Raylib.IsKeyDown(KeyboardKey.E)) playerHeight += HEIGHT_ADJUST_SPEED * deltaTime;
-            if (Raylib.IsKeyDown(KeyboardKey.R)) horizon += HORIZON_ADJUST_SPEED * deltaTime;
-            if (Raylib.IsKeyDown(KeyboardKey.F)) horizon -= HORIZON_ADJUST_SPEED * deltaTime;
+
 
             // Clamp values
             playerHeight = Math.Max(0, Math.Min(MAX_HEIGHT, playerHeight));
-            horizon = Math.Max(0, Math.Min(MAX_HORIZON, horizon));
 
             // Render frame
             Raylib.BeginDrawing();
