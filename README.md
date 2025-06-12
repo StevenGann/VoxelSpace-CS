@@ -2,7 +2,6 @@
 
 ![web demonstration](images/webdemo.gif)
 
-# **[Web Demo of the Voxel Space Engine][project demo]**
 
 ## History
 
@@ -43,28 +42,38 @@ For a 3D engine the rendering algorithm is amazingly simple. The Voxel Space eng
  * Perform the [perspective projection](https://en.wikipedia.org/wiki/3D_projection) for the height coordinate.
  * Draw a vertical line with the corresponding color with the height retrieved from the perspective projection.
 
-The core algorithm contains in its simplest form only a few lines of code (python syntax):
+The core algorithm contains in its simplest form only a few lines of code (C# syntax):
 
-```python
-def Render(p, height, horizon, scale_height, distance, screen_width, screen_height):
-    # Draw from back to the front (high z coordinate to low z coordinate)
-    for z in range(distance, 1, -1):
-        # Find line on map. This calculation corresponds to a field of view of 90°
-        pleft  = Point(-z + p.x, -z + p.y)
-        pright = Point( z + p.x, -z + p.y)
-        # segment the line
-        dx = (pright.x - pleft.x) / screen_width
-        # Raster line and draw a vertical line for each segment
-        for i in range(0, screen_width):
-            height_on_screen = (height - heightmap[pleft.x, pleft.y]) / z * scale_height. + horizon
-            DrawVerticalLine(i, height_on_screen, screen_height, colormap[pleft.x, pleft.y])
-            pleft.x += dx
+```csharp
+public void Render(float playerX, float playerY, float playerHeight, float horizon, float scaleHeight, int distance, int screenWidth, int screenHeight)
+{
+    // Draw from back to the front (high z coordinate to low z coordinate)
+    for (int z = distance; z > 1; z--)
+    {
+        // Find line on map. This calculation corresponds to a field of view of 90°
+        float pleftX = -z + playerX;
+        float pleftY = -z + playerY;
+        float prightX = z + playerX;
+        float prightY = -z + playerY;
 
-# Call the render function with the camera parameters:
-# position, height, horizon line position,
-# scaling factor for the height, the largest distance, 
-# screen width and the screen height parameter
-Render( Point(0, 0), 50, 120, 120, 300, 800, 600 )
+        // segment the line
+        float dx = (prightX - pleftX) / screenWidth;
+
+        // Raster line and draw a vertical line for each segment
+        for (int i = 0; i < screenWidth; i++)
+        {
+            int heightOnScreen = (int)((playerHeight - GetHeightAt((int)pleftX, (int)pleftY)) / z * scaleHeight + horizon);
+            DrawVerticalLine(i, heightOnScreen, screenHeight, GetColorAt((int)pleftX, (int)pleftY));
+            pleftX += dx;
+        }
+    }
+}
+
+// Call the render function with the camera parameters:
+// position, height, horizon line position,
+// scaling factor for the height, the largest distance, 
+// screen width and the screen height parameter
+engine.Render(0, 0, 50, 120, 120, 300, 800, 600);
 ```
 
 ### Add rotation
@@ -73,39 +82,42 @@ With the algorithm above we can only view to the north. A different angle needs 
 
 ![rotation](images/rotate.gif)
 
-```python
-def Render(p, phi, height, horizon, scale_height, distance, screen_width, screen_height):
-    # precalculate viewing angle parameters
-    var sinphi = math.sin(phi);
-    var cosphi = math.cos(phi);
+```csharp
+public void Render(float playerX, float playerY, float playerAngle, float playerHeight, float horizon, float scaleHeight, int distance, int screenWidth, int screenHeight)
+{
+    // precalculate viewing angle parameters
+    float sinPhi = (float)Math.Sin(playerAngle);
+    float cosPhi = (float)Math.Cos(playerAngle);
 
-    # Draw from back to the front (high z coordinate to low z coordinate)
-    for z in range(distance, 1, -1):
+    // Draw from back to the front (high z coordinate to low z coordinate)
+    for (int z = distance; z > 1; z--)
+    {
+        // Find line on map. This calculation corresponds to a field of view of 90°
+        float pleftX = (-cosPhi * z - sinPhi * z) + playerX;
+        float pleftY = (sinPhi * z - cosPhi * z) + playerY;
+        float prightX = (cosPhi * z - sinPhi * z) + playerX;
+        float prightY = (-sinPhi * z - cosPhi * z) + playerY;
 
-        # Find line on map. This calculation corresponds to a field of view of 90°
-        pleft = Point(
-            (-cosphi*z - sinphi*z) + p.x,
-            ( sinphi*z - cosphi*z) + p.y)
-        pright = Point(
-            ( cosphi*z - sinphi*z) + p.x,
-            (-sinphi*z - cosphi*z) + p.y)
-        
-        # segment the line
-        dx = (pright.x - pleft.x) / screen_width
-        dy = (pright.y - pleft.y) / screen_width
+        // segment the line
+        float dx = (prightX - pleftX) / screenWidth;
+        float dy = (prightY - pleftY) / screenWidth;
 
-        # Raster line and draw a vertical line for each segment
-        for i in range(0, screen_width):
-            height_on_screen = (height - heightmap[pleft.x, pleft.y]) / z * scale_height. + horizon
-            DrawVerticalLine(i, height_on_screen, screen_height, colormap[pleft.x, pleft.y])
-            pleft.x += dx
-            pleft.y += dy
+        // Raster line and draw a vertical line for each segment
+        for (int i = 0; i < screenWidth; i++)
+        {
+            int heightOnScreen = (int)((playerHeight - GetHeightAt((int)pleftX, (int)pleftY)) / z * scaleHeight + horizon);
+            DrawVerticalLine(i, heightOnScreen, screenHeight, GetColorAt((int)pleftX, (int)pleftY));
+            pleftX += dx;
+            pleftY += dy;
+        }
+    }
+}
 
-# Call the render function with the camera parameters:
-# position, viewing angle, height, horizon line position, 
-# scaling factor for the height, the largest distance, 
-# screen width and the screen height parameter
-Render( Point(0, 0), 0, 50, 120, 120, 300, 800, 600 )
+// Call the render function with the camera parameters:
+// position, viewing angle, height, horizon line position, 
+// scaling factor for the height, the largest distance, 
+// screen width and the screen height parameter
+engine.Render(0, 0, 0, 50, 120, 120, 300, 800, 600);
 ```
 
 ### More performance
@@ -117,51 +129,59 @@ There are of course a lot of tricks to achieve higher performance.
 
 ![front to back rendering](images/fronttoback.gif)
 
-```python
-def Render(p, phi, height, horizon, scale_height, distance, screen_width, screen_height):
-    # precalculate viewing angle parameters
-    var sinphi = math.sin(phi);
-    var cosphi = math.cos(phi);
+```csharp
+public void Render(float playerX, float playerY, float playerAngle, float playerHeight, float horizon, float scaleHeight, int distance, int screenWidth, int screenHeight)
+{
+    // precalculate viewing angle parameters
+    float sinPhi = (float)Math.Sin(playerAngle);
+    float cosPhi = (float)Math.Cos(playerAngle);
     
-    # initialize visibility array. Y position for each column on screen 
-    ybuffer = np.zeros(screen_width)
-    for i in range(0, screen_width):
-        ybuffer[i] = screen_height
+    // initialize visibility array. Y position for each column on screen 
+    int[] yBuffer = new int[screenWidth];
+    for (int i = 0; i < screenWidth; i++)
+    {
+        yBuffer[i] = screenHeight;
+    }
 
-    # Draw from front to the back (low z coordinate to high z coordinate)
-    dz = 1.
-    z = 1.
-    while z < distance
-        # Find line on map. This calculation corresponds to a field of view of 90°
-        pleft = Point(
-            (-cosphi*z - sinphi*z) + p.x,
-            ( sinphi*z - cosphi*z) + p.y)
-        pright = Point(
-            ( cosphi*z - sinphi*z) + p.x,
-            (-sinphi*z - cosphi*z) + p.y)
+    // Draw from front to the back (low z coordinate to high z coordinate)
+    float dz = 1.0f;
+    float z = 1.0f;
+    while (z < distance)
+    {
+        // Find line on map. This calculation corresponds to a field of view of 90°
+        float pleftX = (-cosPhi * z - sinPhi * z) + playerX;
+        float pleftY = (sinPhi * z - cosPhi * z) + playerY;
+        float prightX = (cosPhi * z - sinPhi * z) + playerX;
+        float prightY = (-sinPhi * z - cosPhi * z) + playerY;
 
-        # segment the line
-        dx = (pright.x - pleft.x) / screen_width
-        dy = (pright.y - pleft.y) / screen_width
+        // segment the line
+        float dx = (prightX - pleftX) / screenWidth;
+        float dy = (prightY - pleftY) / screenWidth;
 
-        # Raster line and draw a vertical line for each segment
-        for i in range(0, screen_width):
-            height_on_screen = (height - heightmap[pleft.x, pleft.y]) / z * scale_height. + horizon
-            DrawVerticalLine(i, height_on_screen, ybuffer[i], colormap[pleft.x, pleft.y])
-            if height_on_screen < ybuffer[i]:
-                ybuffer[i] = height_on_screen
-            pleft.x += dx
-            pleft.y += dy
+        // Raster line and draw a vertical line for each segment
+        for (int i = 0; i < screenWidth; i++)
+        {
+            int heightOnScreen = (int)((playerHeight - GetHeightAt((int)pleftX, (int)pleftY)) / z * scaleHeight + horizon);
+            DrawVerticalLine(i, heightOnScreen, yBuffer[i], GetColorAt((int)pleftX, (int)pleftY));
+            if (heightOnScreen < yBuffer[i])
+            {
+                yBuffer[i] = heightOnScreen;
+            }
+            pleftX += dx;
+            pleftY += dy;
+        }
 
-        # Go to next line and increase step size when you are far away
-        z += dz
-        dz += 0.2
+        // Go to next line and increase step size when you are far away
+        z += dz;
+        dz += 0.2f;
+    }
+}
 
-# Call the render function with the camera parameters:
-# position, viewing angle, height, horizon line position, 
-# scaling factor for the height, the largest distance, 
-# screen width and the screen height parameter
-Render( Point(0, 0), 0, 50, 120, 120, 300, 800, 600 )
+// Call the render function with the camera parameters:
+// position, viewing angle, height, horizon line position, 
+// scaling factor for the height, the largest distance, 
+// screen width and the screen height parameter
+engine.Render(0, 0, 0, 50, 120, 120, 300, 800, 600);
 ```
 
 ## Links
@@ -358,5 +378,3 @@ Render( Point(0, 0), 0, 50, 120, 120, 300, 800, 600 )
 ## License
 
 The software part of the repository is under the MIT license. Please read the license file for more information. Please keep in mind, that the Voxel Space technology might be still [patented](https://patents.justia.com/assignee/novalogic-inc) in some countries. The color and height maps are reverse engineered from the game Comanche and are therefore excluded from the license.
-
-[project demo]: https://s-macke.github.io/VoxelSpace/VoxelSpace.html
