@@ -1,7 +1,5 @@
 # Voxel Space
 
-![web demonstration](images/webdemo.gif)
-
 
 ## History
 
