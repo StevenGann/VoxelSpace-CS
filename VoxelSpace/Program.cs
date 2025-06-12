@@ -176,25 +176,36 @@ class Program
             float moveX = 0;
             float moveY = 0;
 
+            // Forward/backward movement
             if (Raylib.IsKeyDown(KeyboardKey.W))
             {
-                moveX = -(float)Math.Sin(playerAngle) * MOVE_SPEED * deltaTime;
-                moveY = -(float)Math.Cos(playerAngle) * MOVE_SPEED * deltaTime;
+                moveX -= (float)Math.Sin(playerAngle) * MOVE_SPEED * deltaTime;
+                moveY -= (float)Math.Cos(playerAngle) * MOVE_SPEED * deltaTime;
             }
             if (Raylib.IsKeyDown(KeyboardKey.S))
             {
-                moveX = (float)Math.Sin(playerAngle) * MOVE_SPEED * deltaTime;
-                moveY = (float)Math.Cos(playerAngle) * MOVE_SPEED * deltaTime;
+                moveX += (float)Math.Sin(playerAngle) * MOVE_SPEED * deltaTime;
+                moveY += (float)Math.Cos(playerAngle) * MOVE_SPEED * deltaTime;
             }
+
+            // Strafe movement
             if (Raylib.IsKeyDown(KeyboardKey.A))
             {
-                moveX = -(float)Math.Cos(playerAngle) * MOVE_SPEED * deltaTime;
-                moveY = (float)Math.Sin(playerAngle) * MOVE_SPEED * deltaTime;
+                moveX -= (float)Math.Cos(playerAngle) * MOVE_SPEED * deltaTime;
+                moveY += (float)Math.Sin(playerAngle) * MOVE_SPEED * deltaTime;
             }
             if (Raylib.IsKeyDown(KeyboardKey.D))
             {
-                moveX = (float)Math.Cos(playerAngle) * MOVE_SPEED * deltaTime;
-                moveY = -(float)Math.Sin(playerAngle) * MOVE_SPEED * deltaTime;
+                moveX += (float)Math.Cos(playerAngle) * MOVE_SPEED * deltaTime;
+                moveY -= (float)Math.Sin(playerAngle) * MOVE_SPEED * deltaTime;
+            }
+
+            // Normalize diagonal movement
+            if (moveX != 0 && moveY != 0)
+            {
+                float length = (float)Math.Sqrt(moveX * moveX + moveY * moveY);
+                moveX = moveX / length * MOVE_SPEED * deltaTime;
+                moveY = moveY / length * MOVE_SPEED * deltaTime;
             }
 
             // Update position with collision detection
